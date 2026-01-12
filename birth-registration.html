@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birth Registration - Civil Registration System (Local)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="bg-gray-50">
+    <!-- Sidebar and Main structure same as others... -->
+    <aside id="sidebar"
+        class="sidebar fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-blue-900 to-purple-900 text-white z-50 shadow-2xl transition-all duration-300">
+        <div class="p-6">
+            <div class="flex items-center space-x-3 mb-8">
+                <div class="p-2 bg-white bg-opacity-20 rounded-lg"><i class="fas fa-landmark text-2xl"></i></div>
+                <div class="logo-text">
+                    <h2 class="text-xl font-bold">Civil Registry</h2>
+                    <p class="text-xs text-blue-200">Local Version</p>
+                </div>
+            </div>
+            <nav class="space-y-2">
+                <a href="dashboard.html" class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg"><i
+                        class="fas fa-chart-line text-lg w-6"></i><span class="menu-text">Dashboard</span></a>
+                <a href="birth-registration.html"
+                    class="menu-item active flex items-center space-x-3 px-4 py-3 rounded-lg"><i
+                        class="fas fa-baby text-lg w-6"></i><span class="menu-text">Birth Registration</span></a>
+                <a href="death-registration.html" class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg"><i
+                        class="fas fa-book-dead text-lg w-6"></i><span class="menu-text">Death Registration</span></a>
+                <a href="users.html" class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg"><i
+                        class="fas fa-users text-lg w-6"></i><span class="menu-text">Users</span></a>
+                <a href="#" onclick="logout()"
+                    class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg mt-8 bg-red-600 bg-opacity-20 hover:bg-opacity-30"><i
+                        class="fas fa-sign-out-alt text-lg w-6"></i><span class="menu-text">Logout</span></a>
+            </nav>
+        </div>
+    </aside>
+
+    <div id="mainContent" class="ml-64 transition-all duration-300">
+        <header class="bg-white shadow-sm sticky top-0 z-40">
+            <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center space-x-4">
+                    <button id="toggleSidebar" class="text-gray-600 focus:outline-none"><i
+                            class="fas fa-bars text-xl"></i></button>
+                    <h1 class="text-2xl font-bold gradient-text" id="pageTitle">Birth Registration</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative group">
+                        <button class="flex items-center space-x-3 focus:outline-none">
+                            <img id="userAvatar" src="https://ui-avatars.com/api/?name=User"
+                                class="w-10 h-10 rounded-full border-2 border-white shadow-md">
+                            <div class="hidden md:block text-left">
+                                <p id="userName" class="text-sm font-semibold text-gray-800">User</p>
+                                <p id="userRole" class="text-xs text-gray-500">Role</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="p-6">
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-white rounded-2xl shadow-lg p-8">
+                    <form id="birthForm" class="space-y-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Child Information</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                                <input type="text" id="full_name" required class="w-full px-4 py-3 border rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Date of Birth *</label>
+                                <input type="date" id="date_of_birth" required
+                                    class="w-full px-4 py-3 border rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
+                                <select id="gender" required class="w-full px-4 py-3 border rounded-lg">
+                                    <option value="">Select Gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Place of Birth *</label>
+                                <input type="text" id="place_of_birth" required
+                                    class="w-full px-4 py-3 border rounded-lg">
+                            </div>
+                        </div>
+
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 pt-4">Parents
+                            Information</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label class="block text-sm font-medium text-gray-700 mb-2">Father's Name
+                                    *</label><input type="text" id="father_name" required
+                                    class="w-full px-4 py-3 border rounded-lg"></div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-2">Father's Nationality
+                                    *</label><input type="text" id="father_nationality" required
+                                    class="w-full px-4 py-3 border rounded-lg"></div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-2">Mother's Name
+                                    *</label><input type="text" id="mother_name" required
+                                    class="w-full px-4 py-3 border rounded-lg"></div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-2">Mother's Nationality
+                                    *</label><input type="text" id="mother_nationality" required
+                                    class="w-full px-4 py-3 border rounded-lg"></div>
+                        </div>
+
+                        <div class="flex justify-end space-x-4 pt-6">
+                            <a href="dashboard.html" class="px-6 py-3 border rounded-lg">Cancel</a>
+                            <button type="submit"
+                                class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-bold">Save
+                                Registration</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="main.js"></script>
+    <script>
+        checkAuth();
+        const urlParams = new URLSearchParams(window.location.search);
+        const editId = urlParams.get('id');
+        if (editId) loadData();
+
+        async function loadData() {
+            const res = await apiRequest(`birth?action=get&id=${editId}`);
+            if (res.success) {
+                const d = res.data;
+                ['full_name', 'date_of_birth', 'gender', 'place_of_birth', 'father_name', 'father_nationality', 'mother_name', 'mother_nationality'].forEach(f => {
+                    document.getElementById(f).value = d[f];
+                });
+            }
+        }
+
+        document.getElementById('birthForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                full_name: document.getElementById('full_name').value,
+                date_of_birth: document.getElementById('date_of_birth').value,
+                gender: document.getElementById('gender').value,
+                place_of_birth: document.getElementById('place_of_birth').value,
+                father_name: document.getElementById('father_name').value,
+                father_nationality: document.getElementById('father_nationality').value,
+                mother_name: document.getElementById('mother_name').value,
+                mother_nationality: document.getElementById('mother_nationality').value
+            };
+            if (editId) data.id = editId;
+            const res = await apiRequest(`birth?action=${editId ? 'update' : 'register'}`, 'POST', data);
+            if (res.success) {
+                showNotification('Success');
+                setTimeout(() => window.location.href = 'birth-records.html', 1000);
+            }
+        });
+    </script>
+</body>
+
+</html>
