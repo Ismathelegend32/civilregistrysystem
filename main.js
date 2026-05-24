@@ -101,8 +101,24 @@ function ensureLocalUsers(defaultUsers) {
 
 initLocalDB();
 
+function shouldShowInstallGate() {
+    const standalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.matchMedia('(display-mode: fullscreen)').matches ||
+        window.navigator.standalone === true;
+    if (standalone) return false;
+    if (localStorage.getItem('crs_install_seen') === '1') return false;
+    if (window.location.pathname.includes('install.html')) return false;
+    return true;
+}
+
 // --- Auth Utilities ---
 async function checkAuth() {
+    if (shouldShowInstallGate()) {
+        window.location.replace('install.html');
+        return null;
+    }
+
     const userData = localStorage.getItem('crs_current_user');
 
     if (!userData) {
@@ -388,6 +404,7 @@ function renderSidebarNav(activePage) {
         { id: 'death-records', href: 'death-records.html', icon: 'fa-file-medical', label: 'Death Reports' },
         { id: 'reports', href: 'reports.html', icon: 'fa-chart-pie', label: 'Reports' },
         { id: 'profile', href: 'profile.html', icon: 'fa-user-circle', label: 'Profile & Settings' },
+        { id: 'install', href: 'install.html', icon: 'fa-download', label: 'Install App' },
         { id: 'users', href: 'users.html', icon: 'fa-users', label: 'Users', adminOnly: true }
     ];
     const isAdmin = window.currentUser && window.currentUser.role === 'admin';
@@ -522,6 +539,9 @@ function applyResponsiveTableLabels(tableId, labels) {
 
 document.addEventListener('DOMContentLoaded', () => {
     initResponsiveSidebar();
+    if (typeof window.CRS_PWA !== 'undefined') {
+        window.CRS_PWA.initPwaInstallBanner();
+    }
 });
 
 function showNotification(message, type = 'success') {

@@ -92,6 +92,13 @@
     </div>
 
 
+    <script src="pwa-install.js"></script>
+    <script>
+        CRS_PWA.registerServiceWorker();
+        if (CRS_PWA.shouldGateIndex()) {
+            window.location.replace('install.html');
+        }
+    </script>
     <script src="main.js"></script>
     <script>
         const loginForm = document.getElementById('loginForm');

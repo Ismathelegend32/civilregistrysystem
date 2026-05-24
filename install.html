@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="so">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Civil Registry">
+    <meta name="theme-color" content="#667eea">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="logo.png">
+    <title>Ku rakib App-ka — Civil Registry</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="install-page-body">
+    <main class="install-page-card">
+        <div class="install-hero">
+            <img src="logo.png" alt="Civil Registry" class="install-logo">
+            <h1>Civil Registration System</h1>
+            <p class="install-subtitle">Birth &amp; Death Registration</p>
+        </div>
+
+        <div id="hintWebView" class="install-hint hidden">
+            <p class="install-hint-title"><i class="fas fa-mobile-alt"></i> Waxaad isticmaalaysaa App-ka (WebView)</p>
+            <p>Haddii aad telefoon kale ku rakibaysid, fur link-ga <strong>Chrome</strong> ama <strong>Safari</strong>, kadib raac tilmaamaha hoose.</p>
+        </div>
+
+        <div id="hintAndroid" class="install-hint hidden">
+            <p class="install-hint-title"><i class="fab fa-android"></i> Android — Ku rakib Home Screen</p>
+            <ol>
+                <li>Guji badhanka <strong>Install App</strong> hoose (haddii uu muuqdo).</li>
+                <li>Ama menu-ga browser-ka (<i class="fas fa-ellipsis-v"></i>) → <strong>Add to Home screen</strong> / <strong>Install app</strong>.</li>
+            </ol>
+        </div>
+
+        <div id="hintIos" class="install-hint hidden">
+            <p class="install-hint-title"><i class="fab fa-apple"></i> iPhone — Ku rakib Home Screen</p>
+            <ol>
+                <li>Fur boggan <strong>Safari</strong> (ma aha Chrome gudaha iPhone).</li>
+                <li>Guji <strong>Share</strong> <i class="fas fa-share-square"></i></li>
+                <li>Dooro <strong>Add to Home Screen</strong></li>
+                <li>Guji <strong>Add</strong></li>
+            </ol>
+        </div>
+
+        <div id="hintBrowser" class="install-hint hidden">
+            <p class="install-hint-title"><i class="fas fa-download"></i> Ku rakib App-ka</p>
+            <p>Si app-ku u noqdo sida telefoonkaaga app kale, ku dar <strong>Home Screen</strong> ka hor intaadan galin.</p>
+        </div>
+
+        <div class="install-actions">
+            <button type="button" id="btnNativeInstall" class="install-btn install-btn-primary hidden" disabled>
+                <i class="fas fa-download mr-2"></i>Install App
+            </button>
+            <button type="button" id="btnContinueApp" class="install-btn install-btn-secondary">
+                <i class="fas fa-arrow-right mr-2"></i>Gal App-ka (Continue)
+            </button>
+        </div>
+
+        <p class="install-footnote">Markaad Home Screen ku darto, mar dambe si toos ah ayuu u furmi doonaa.</p>
+    </main>
+
+    <script src="pwa-install.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            CRS_PWA.initInstallPage();
+        });
+    </script>
+</body>
+
+</html>

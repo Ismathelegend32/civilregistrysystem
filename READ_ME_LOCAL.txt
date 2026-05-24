@@ -17,8 +17,12 @@ Ma u baahna Cloudinary preset.
 
 WEBVIEW / APP (Android):
 ------------------------
-1. Fur index.html browser-ka ama ku dar WebView app
-2. manifest.json waa PWA — "Add to Home Screen" mobile-ka
+1. Browser: fur install.html (ama index.html — wuxuu kuu geynayaa install)
+2. WebView app: URL-ga bilowga ah ha noqdo install.html (MA index/dashboard toos)
+   Tusaale: https://yoursite.com/local-version/install.html
+3. Bogga install wuxuu muujinayaa "Ku rakib Home Screen" + badhanka "Gal App-ka"
+4. Sidebar: "Install App" — mar walba waad ka arki kartaa tilmaamaha
+5. PWA Home Screen: markaad icon-ka taabato, si toos ah ayuu u gelayaa app-ka
 
 LOGIN-KA:
 ---------
