@@ -270,20 +270,58 @@
 }
 
 /* ========== Mobile & Tablet Responsive ========== */
+/* Sidebar layout — footer must not cover menu links */
+#sidebar .sidebar-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 100vh;
+    padding-bottom: 0;
+}
+
+#sidebar nav {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 1rem;
+    position: relative;
+    z-index: 2;
+}
+
+#sidebar .sidebar-footer {
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+    margin-top: auto;
+    padding: 1rem 1.5rem 1.5rem;
+}
+
 .sidebar-overlay {
     display: none;
     position: fixed;
     inset: 0;
     background: rgba(15, 23, 42, 0.55);
     backdrop-filter: blur(2px);
-    z-index: 45;
+    z-index: 40;
     opacity: 0;
     transition: opacity 0.3s ease;
+    pointer-events: none;
 }
 
 .sidebar-overlay.active {
     display: block;
     opacity: 1;
+    pointer-events: auto;
+}
+
+#sidebar {
+    z-index: 50;
+}
+
+#mainContent {
+    position: relative;
+    z-index: 1;
 }
 
 body.sidebar-open {

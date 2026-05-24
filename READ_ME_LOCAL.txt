@@ -10,20 +10,22 @@ SIDA LOO ISTICMAALO:
 2. Data-da wax walba oo aad geliso waxay ku keydsanayaan Browser-kaaga (LocalStorage).
 3. Haddii aad Browser-ka nadiifiso (Clear cache), data-du way lumaysaa.
 
-CLOUDINARY (Profile pictures):
-------------------------------
-1. Gal cloudinary.com → Settings → Upload → Add upload preset
-2. Magaca: crs_profiles | Signing: Unsigned | Folder: crs_profiles
-3. Sawirrada profile-ka waxay ku keydsan yihiin Cloudinary (duzuguldp)
+PROFILE PICTURES:
+-----------------
+Sawirrada profile-ka waxay ku keydsan yihiin browser-kaaga (local).
+Ma u baahna Cloudinary preset.
+
+WEBVIEW / APP (Android):
+------------------------
+1. Fur index.html browser-ka ama ku dar WebView app
+2. manifest.json waa PWA — "Add to Home Screen" mobile-ka
 
 LOGIN-KA:
 ---------
-Username: admin
-Password: admin123
-
-AMA:
-Username: ismacil
-Password: admin123
+admin / admin123
+ismacil / isma123
+qadar / leo123
+munasar / madax123
 
 DESIGN-KA:
 ----------

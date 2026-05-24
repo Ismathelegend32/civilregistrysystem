@@ -5,22 +5,29 @@
 
 // --- Local Database Initialization ---
 function initLocalDB() {
-    const DATA_VERSION = '3.1'; // admin123 credentials + responsive updates
+    const DATA_VERSION = '3.2';
     const currentVersion = localStorage.getItem('crs_data_version');
 
     if (currentVersion !== DATA_VERSION) {
         localStorage.removeItem('crs_users');
-        localStorage.removeItem('crs_births');
-        localStorage.removeItem('crs_deaths');
+        if (!localStorage.getItem('crs_births')) {
+            localStorage.removeItem('crs_births');
+            localStorage.removeItem('crs_deaths');
+        }
         localStorage.setItem('crs_data_version', DATA_VERSION);
     }
 
+    const defaultUsers = [
+        { id: 1, username: 'admin', password: 'admin123', email: 'admin@civilreg.gov', full_name: 'System Administrator', role: 'admin', profile_pic: null, created_at: new Date().toISOString() },
+        { id: 2, username: 'ismacil', password: 'isma123', email: 'ismacil@civilreg.gov', full_name: 'Ismail Ahmed', role: 'staff', profile_pic: null, created_at: new Date().toISOString() },
+        { id: 3, username: 'qadar', password: 'leo123', email: 'qadar@civilreg.gov', full_name: 'Qadar Mohamed', role: 'staff', profile_pic: null, created_at: new Date().toISOString() },
+        { id: 4, username: 'munasar', password: 'madax123', email: 'munasar@civilreg.gov', full_name: 'Munasar Ali', role: 'staff', profile_pic: null, created_at: new Date().toISOString() }
+    ];
+
     if (!localStorage.getItem('crs_users')) {
-        const initialUsers = [
-            { id: 1, username: 'admin', password: 'admin123', email: 'admin@example.com', full_name: 'System Administrator', role: 'admin', profile_pic: null, created_at: new Date().toISOString() },
-            { id: 2, username: 'ismacil', password: 'admin123', email: 'ismacil@example.com', full_name: 'Ismail Ahmed', role: 'staff', profile_pic: null, created_at: new Date().toISOString() }
-        ];
-        localStorage.setItem('crs_users', JSON.stringify(initialUsers));
+        localStorage.setItem('crs_users', JSON.stringify(defaultUsers));
+    } else {
+        ensureLocalUsers(defaultUsers);
     }
 
     if (!localStorage.getItem('crs_births')) {
@@ -77,6 +84,19 @@ function initLocalDB() {
         }
         localStorage.setItem('crs_deaths', JSON.stringify(deaths));
     }
+}
+
+function ensureLocalUsers(defaultUsers) {
+    let users = JSON.parse(localStorage.getItem('crs_users') || '[]');
+    defaultUsers.forEach(def => {
+        const idx = users.findIndex(u => u.username === def.username);
+        if (idx === -1) {
+            users.push({ ...def, id: users.length ? Math.max(...users.map(u => u.id)) + 1 : def.id });
+        } else {
+            users[idx] = { ...users[idx], password: def.password, full_name: def.full_name, email: def.email, role: def.role };
+        }
+    });
+    localStorage.setItem('crs_users', JSON.stringify(users));
 }
 
 initLocalDB();
@@ -306,22 +326,44 @@ function isMobileViewport() {
     return window.innerWidth < 768;
 }
 
-const CRS_CLOUDINARY = { cloudName: 'duzuguldp', uploadPreset: 'crs_profiles' };
-
+/** Local profile image — saved in browser (no Cloudinary preset required). */
 async function uploadProfileImageToCloudinary(file) {
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('upload_preset', CRS_CLOUDINARY.uploadPreset);
-    fd.append('folder', 'crs_profiles');
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CRS_CLOUDINARY.cloudName}/image/upload`, {
-        method: 'POST',
-        body: fd
-    });
-    const data = await res.json();
-    if (!data.secure_url) {
-        throw new Error(data.error?.message || 'Cloudinary upload failed. Create unsigned preset "crs_profiles" in Cloudinary dashboard.');
+    if (!file || !file.type.startsWith('image/')) {
+        throw new Error('Please choose an image file');
     }
-    return data.secure_url;
+    if (file.size > 3 * 1024 * 1024) {
+        throw new Error('Image must be under 3MB');
+    }
+    return compressImageToDataUrl(file, 400, 0.82);
+}
+
+function compressImageToDataUrl(file, maxSize, quality) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Could not read image'));
+        reader.onload = () => {
+            const img = new Image();
+            img.onerror = () => reject(new Error('Invalid image'));
+            img.onload = () => {
+                let w = img.width;
+                let h = img.height;
+                if (w > h && w > maxSize) {
+                    h = (h * maxSize) / w;
+                    w = maxSize;
+                } else if (h > maxSize) {
+                    w = (w * maxSize) / h;
+                    h = maxSize;
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+    });
 }
 
 function applyAvatarToPage(url, fullName) {
@@ -345,15 +387,49 @@ function renderSidebarNav(activePage) {
         { id: 'birth-records', href: 'birth-records.html', icon: 'fa-file-alt', label: 'Birth Reports' },
         { id: 'death-records', href: 'death-records.html', icon: 'fa-file-medical', label: 'Death Reports' },
         { id: 'reports', href: 'reports.html', icon: 'fa-chart-pie', label: 'Reports' },
+        { id: 'profile', href: 'profile.html', icon: 'fa-user-circle', label: 'Profile & Settings' },
         { id: 'users', href: 'users.html', icon: 'fa-users', label: 'Users', adminOnly: true }
     ];
     const isAdmin = window.currentUser && window.currentUser.role === 'admin';
     nav.innerHTML = items.filter(i => !i.adminOnly || isAdmin).map(i =>
-        `<a href="${i.href}" class="menu-item${activePage === i.id ? ' active' : ''} flex items-center space-x-3 px-4 py-3 rounded-lg">
-        <i class="fas ${i.icon} text-lg w-6"></i><span class="menu-text">${i.label}</span></a>`
-    ).join('') + `<a href="#" onclick="logout();return false;" class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg mt-8 bg-red-600 bg-opacity-20 hover:bg-opacity-30">
-        <i class="fas fa-sign-out-alt text-lg w-6"></i><span class="menu-text">Logout</span></a>`;
+        `<a href="${i.href}" class="menu-item${activePage === i.id ? ' active' : ''} flex items-center space-x-3 px-4 py-3 rounded-lg relative z-10">
+        <i class="fas ${i.icon} text-lg w-6 shrink-0"></i><span class="menu-text">${i.label}</span></a>`
+    ).join('') + `<button type="button" id="sidebarLogoutBtn" class="menu-item w-full text-left flex items-center space-x-3 px-4 py-3 rounded-lg mt-6 bg-red-600 bg-opacity-20 hover:bg-opacity-30 relative z-10">
+        <i class="fas fa-sign-out-alt text-lg w-6 shrink-0"></i><span class="menu-text">Logout</span></button>`;
+
+    const logoutBtn = document.getElementById('sidebarLogoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            logout();
+        });
+    }
+
+    if (!nav.dataset.bound) {
+        nav.dataset.bound = '1';
+        nav.addEventListener('click', (e) => {
+            if (e.target.closest('a[href]') && isMobileViewport()) {
+                closeMobileSidebarGlobal();
+            }
+        });
+    }
+
+    setupHeaderProfileLink();
 }
+
+function setupHeaderProfileLink() {
+    document.querySelectorAll('#userAvatar').forEach(img => {
+        if (img.closest('a')) return;
+        const wrap = document.createElement('a');
+        wrap.href = 'profile.html';
+        wrap.className = 'block shrink-0';
+        wrap.title = 'Profile & Settings';
+        img.parentNode.insertBefore(wrap, img);
+        wrap.appendChild(img);
+    });
+}
+
+let closeMobileSidebarGlobal = () => {};
 
 function openBirthCertificate(id) {
     window.open(`certificate-birth.html?id=${encodeURIComponent(id)}`, '_blank');
@@ -381,6 +457,7 @@ function initResponsiveSidebar() {
         overlay.classList.remove('active');
         document.body.classList.remove('sidebar-open');
     }
+    closeMobileSidebarGlobal = closeMobileSidebar;
 
     function openMobileSidebar() {
         sidebar.classList.add('mobile-open');
@@ -426,11 +503,6 @@ function initResponsiveSidebar() {
     }
 
     overlay.addEventListener('click', closeMobileSidebar);
-    sidebar.querySelectorAll('nav a[href]:not([href="#"])').forEach(link => {
-        link.addEventListener('click', () => {
-            if (isMobileViewport()) closeMobileSidebar();
-        });
-    });
 
     window.addEventListener('resize', syncLayout);
     syncLayout();
