@@ -10,6 +10,12 @@ SIDA LOO ISTICMAALO:
 2. Data-da wax walba oo aad geliso waxay ku keydsanayaan Browser-kaaga (LocalStorage).
 3. Haddii aad Browser-ka nadiifiso (Clear cache), data-du way lumaysaa.
 
+CLOUDINARY (Profile pictures):
+------------------------------
+1. Gal cloudinary.com → Settings → Upload → Add upload preset
+2. Magaca: crs_profiles | Signing: Unsigned | Folder: crs_profiles
+3. Sawirrada profile-ka waxay ku keydsan yihiin Cloudinary (duzuguldp)
+
 LOGIN-KA:
 ---------
 Username: admin

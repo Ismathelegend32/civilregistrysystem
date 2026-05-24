@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 
-<body class="bg-gray-50">
+<body class="bg-gray-50" data-page="birth-records">
     <aside id="sidebar"
         class="sidebar fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-blue-900 to-purple-900 text-white z-50 shadow-2xl transition-all duration-300">
         <div class="p-6">
@@ -21,20 +21,7 @@
                     <p class="text-xs text-blue-200">Local Version</p>
                 </div>
             </div>
-            <nav class="space-y-2">
-                <a href="dashboard.html" class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg"><i
-                        class="fas fa-chart-line text-lg w-6"></i><span class="menu-text">Dashboard</span></a>
-                <a href="birth-registration.html"
-                    class="menu-item active flex items-center space-x-3 px-4 py-3 rounded-lg"><i
-                        class="fas fa-baby text-lg w-6"></i><span class="menu-text">Birth Registration</span></a>
-                <a href="death-registration.html" class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg"><i
-                        class="fas fa-book-dead text-lg w-6"></i><span class="menu-text">Death Registration</span></a>
-                <a href="users.html" class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg"><i
-                        class="fas fa-users text-lg w-6"></i><span class="menu-text">Users</span></a>
-                <a href="#" onclick="logout()"
-                    class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg mt-8 bg-red-600 bg-opacity-20 hover:bg-opacity-30"><i
-                        class="fas fa-sign-out-alt text-lg w-6"></i><span class="menu-text">Logout</span></a>
-            </nav>
+            <nav class="space-y-2"></nav>
             <div class="absolute bottom-6 left-0 w-full px-6">
                 <div
                     class="flex items-center space-x-3 bg-white bg-opacity-10 p-3 rounded-lg backdrop-blur-sm border border-white border-opacity-10">
@@ -149,9 +136,10 @@
                     <td data-label="${labels[5]}" class="px-6 py-4 text-sm text-gray-600 font-semibold">${r.registered_by_username}</td>
                     <td data-label="${labels[6]}" class="px-6 py-4 text-sm text-gray-500">${new Date(r.created_at).toLocaleDateString()}</td>
                     <td data-label="${labels[7]}" class="px-6 py-4 text-sm">
-                        <div class="flex space-x-2">
-                            <a href="birth-registration.html?id=${r.id}" class="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded-lg"><i class="fas fa-edit"></i></a>
-                            <button onclick="deleteRow(${r.id})" class="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg"><i class="fas fa-trash"></i></button>
+                        <div class="flex flex-wrap gap-2">
+                            <a href="birth-registration.html?id=${r.id}" class="text-blue-600 p-2"><i class="fas fa-edit"></i></a>
+                            <button type="button" onclick="deleteRow(${r.id})" class="text-red-600 p-2"><i class="fas fa-trash"></i></button>
+                            <button type="button" onclick="openBirthCertificate(${r.id})" class="text-purple-700 text-xs font-medium px-2"><i class="fas fa-certificate"></i> Shahaado</button>
                         </div>
                     </td>
                 </tr>

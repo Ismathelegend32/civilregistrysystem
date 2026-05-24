@@ -17,8 +17,8 @@ function initLocalDB() {
 
     if (!localStorage.getItem('crs_users')) {
         const initialUsers = [
-            { id: 1, username: 'admin', password: 'admin123', email: 'admin@example.com', full_name: 'System Administrator', role: 'admin', created_at: new Date().toISOString() },
-            { id: 2, username: 'ismacil', password: 'admin123', email: 'ismacil@example.com', full_name: 'Ismail Ahmed', role: 'staff', created_at: new Date().toISOString() }
+            { id: 1, username: 'admin', password: 'admin123', email: 'admin@example.com', full_name: 'System Administrator', role: 'admin', profile_pic: null, created_at: new Date().toISOString() },
+            { id: 2, username: 'ismacil', password: 'admin123', email: 'ismacil@example.com', full_name: 'Ismail Ahmed', role: 'staff', profile_pic: null, created_at: new Date().toISOString() }
         ];
         localStorage.setItem('crs_users', JSON.stringify(initialUsers));
     }
@@ -100,11 +100,12 @@ async function checkAuth() {
         if (document.getElementById('userRole')) {
             document.getElementById('userRole').textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1);
         }
-        if (document.getElementById('userAvatar')) {
-            document.getElementById('userAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name)}&background=random`;
-        }
-
+        applyAvatarToPage(user.profile_pic, user.full_name);
         updateUIBasedOnRole(user);
+
+        const activePage = document.body.dataset.page;
+        if (activePage) renderSidebarNav(activePage);
+
         return user;
     } catch (error) {
         localStorage.removeItem('crs_current_user');
@@ -281,7 +282,12 @@ async function apiRequest(url, method = 'GET', data = null) {
                 } else if (action === 'update') {
                     users = users.map(u => u.id == data.id ? { ...u, ...data } : u);
                     localStorage.setItem('crs_users', JSON.stringify(users));
-                    resolve({ success: true, message: 'User updated' });
+                    if (currentUser.id == data.id) {
+                        const updated = users.find(u => u.id == data.id);
+                        localStorage.setItem('crs_current_user', JSON.stringify(updated));
+                        window.currentUser = updated;
+                    }
+                    resolve({ success: true, message: 'User updated', profile_pic: data.profile_pic });
                 } else if (action === 'delete') {
                     users = users.filter(u => u.id != id);
                     localStorage.setItem('crs_users', JSON.stringify(users));
@@ -300,28 +306,60 @@ function isMobileViewport() {
     return window.innerWidth < 768;
 }
 
-function enhanceSidebarNav() {
-    const nav = document.querySelector('#sidebar nav');
-    if (!nav || nav.querySelector('[data-nav="birth-records"]')) return;
+const CRS_CLOUDINARY = { cloudName: 'duzuguldp', uploadPreset: 'crs_profiles' };
 
-    const insertAfter = nav.querySelector('a[href="death-registration.html"]');
-    if (!insertAfter) return;
-
-    const items = [
-        { href: 'birth-records.html', icon: 'fa-file-alt', label: 'Birth Reports', key: 'birth-records' },
-        { href: 'death-records.html', icon: 'fa-file-medical', label: 'Death Reports', key: 'death-records' }
-    ];
-
-    let anchor = insertAfter;
-    items.forEach(item => {
-        const link = document.createElement('a');
-        link.href = item.href;
-        link.setAttribute('data-nav', item.key);
-        link.className = 'menu-item flex items-center space-x-3 px-4 py-3 rounded-lg';
-        link.innerHTML = `<i class="fas ${item.icon} text-lg w-6"></i><span class="menu-text">${item.label}</span>`;
-        anchor.insertAdjacentElement('afterend', link);
-        anchor = link;
+async function uploadProfileImageToCloudinary(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CRS_CLOUDINARY.uploadPreset);
+    fd.append('folder', 'crs_profiles');
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CRS_CLOUDINARY.cloudName}/image/upload`, {
+        method: 'POST',
+        body: fd
     });
+    const data = await res.json();
+    if (!data.secure_url) {
+        throw new Error(data.error?.message || 'Cloudinary upload failed. Create unsigned preset "crs_profiles" in Cloudinary dashboard.');
+    }
+    return data.secure_url;
+}
+
+function applyAvatarToPage(url, fullName) {
+    const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName || 'User')}&background=667eea&color=fff`;
+    const src = url || fallback;
+    document.querySelectorAll('#userAvatar, #profileImagePreview, #profilePic').forEach(el => {
+        if (el) {
+            el.src = src;
+            el.classList.add('object-cover');
+        }
+    });
+}
+
+function renderSidebarNav(activePage) {
+    const nav = document.querySelector('#sidebar nav');
+    if (!nav) return;
+    const items = [
+        { id: 'dashboard', href: 'dashboard.html', icon: 'fa-chart-line', label: 'Dashboard' },
+        { id: 'birth-registration', href: 'birth-registration.html', icon: 'fa-baby', label: 'Birth Registration' },
+        { id: 'death-registration', href: 'death-registration.html', icon: 'fa-book-dead', label: 'Death Registration' },
+        { id: 'birth-records', href: 'birth-records.html', icon: 'fa-file-alt', label: 'Birth Reports' },
+        { id: 'death-records', href: 'death-records.html', icon: 'fa-file-medical', label: 'Death Reports' },
+        { id: 'reports', href: 'reports.html', icon: 'fa-chart-pie', label: 'Reports' },
+        { id: 'users', href: 'users.html', icon: 'fa-users', label: 'Users', adminOnly: true }
+    ];
+    const isAdmin = window.currentUser && window.currentUser.role === 'admin';
+    nav.innerHTML = items.filter(i => !i.adminOnly || isAdmin).map(i =>
+        `<a href="${i.href}" class="menu-item${activePage === i.id ? ' active' : ''} flex items-center space-x-3 px-4 py-3 rounded-lg">
+        <i class="fas ${i.icon} text-lg w-6"></i><span class="menu-text">${i.label}</span></a>`
+    ).join('') + `<a href="#" onclick="logout();return false;" class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg mt-8 bg-red-600 bg-opacity-20 hover:bg-opacity-30">
+        <i class="fas fa-sign-out-alt text-lg w-6"></i><span class="menu-text">Logout</span></a>`;
+}
+
+function openBirthCertificate(id) {
+    window.open(`certificate-birth.html?id=${encodeURIComponent(id)}`, '_blank');
+}
+function openDeathCertificate(id) {
+    window.open(`certificate-death.html?id=${encodeURIComponent(id)}`, '_blank');
 }
 
 function initResponsiveSidebar() {
@@ -411,7 +449,6 @@ function applyResponsiveTableLabels(tableId, labels) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    enhanceSidebarNav();
     initResponsiveSidebar();
 });
 
@@ -447,3 +484,8 @@ window.showLoading = showLoading;
 window.hideLoading = hideLoading;
 window.confirmAction = confirmAction;
 window.applyResponsiveTableLabels = applyResponsiveTableLabels;
+window.uploadProfileImageToCloudinary = uploadProfileImageToCloudinary;
+window.applyAvatarToPage = applyAvatarToPage;
+window.renderSidebarNav = renderSidebarNav;
+window.openBirthCertificate = openBirthCertificate;
+window.openDeathCertificate = openDeathCertificate;
