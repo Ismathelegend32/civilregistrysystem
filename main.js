@@ -93,7 +93,9 @@ function ensureLocalUsers(defaultUsers) {
         if (idx === -1) {
             users.push({ ...def, id: users.length ? Math.max(...users.map(u => u.id)) + 1 : def.id });
         } else {
+            const pic = users[idx].profile_pic;
             users[idx] = { ...users[idx], password: def.password, full_name: def.full_name, email: def.email, role: def.role };
+            if (pic) users[idx].profile_pic = pic;
         }
     });
     localStorage.setItem('crs_users', JSON.stringify(users));
@@ -112,6 +114,44 @@ function shouldShowInstallGate() {
     return true;
 }
 
+/** Reload logged-in user from crs_users so profile_pic survives refresh */
+function syncCurrentUserFromDb() {
+    const raw = localStorage.getItem('crs_current_user');
+    if (!raw) return null;
+    let cur;
+    try {
+        cur = JSON.parse(raw);
+    } catch (e) {
+        return null;
+    }
+    const users = JSON.parse(localStorage.getItem('crs_users') || '[]');
+    const fresh = users.find(
+        (u) => Number(u.id) === Number(cur.id) || u.username === cur.username
+    );
+    if (fresh) {
+        localStorage.setItem('crs_current_user', JSON.stringify(fresh));
+        window.currentUser = fresh;
+        return fresh;
+    }
+    window.currentUser = cur;
+    return cur;
+}
+
+/** Save profile fields to crs_users + crs_current_user (localStorage) */
+function persistUserProfile(userId, updates) {
+    const id = Number(userId);
+    let users = JSON.parse(localStorage.getItem('crs_users') || '[]');
+    users = users.map((u) => (Number(u.id) === id ? { ...u, ...updates } : u));
+    localStorage.setItem('crs_users', JSON.stringify(users));
+    const updated = users.find((u) => Number(u.id) === id);
+    const cur = JSON.parse(localStorage.getItem('crs_current_user') || 'null');
+    if (updated && cur && Number(cur.id) === id) {
+        localStorage.setItem('crs_current_user', JSON.stringify(updated));
+        window.currentUser = updated;
+    }
+    return updated;
+}
+
 // --- Auth Utilities ---
 async function checkAuth() {
     if (shouldShowInstallGate()) {
@@ -127,16 +167,16 @@ async function checkAuth() {
     }
 
     try {
-        const user = JSON.parse(userData);
-        window.currentUser = user;
+        const user = syncCurrentUserFromDb() || JSON.parse(userData);
 
-        if (document.getElementById('userName')) {
-            document.getElementById('userName').textContent = user.full_name;
-        }
-        if (document.getElementById('userRole')) {
-            document.getElementById('userRole').textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1);
-        }
+        document.querySelectorAll('#userName').forEach((el) => {
+            el.textContent = user.full_name;
+        });
+        document.querySelectorAll('#userRole').forEach((el) => {
+            el.textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+        });
         applyAvatarToPage(user.profile_pic, user.full_name);
+        ensureHeaderProfileAccess(user);
         updateUIBasedOnRole(user);
 
         const activePage = document.body.dataset.page;
@@ -183,8 +223,9 @@ async function apiRequest(url, method = 'GET', data = null) {
                     const users = JSON.parse(localStorage.getItem('crs_users'));
                     const user = users.find(u => u.username === data.username && u.password === data.password);
                     if (user) {
-                        localStorage.setItem('crs_current_user', JSON.stringify(user));
-                        resolve({ success: true, user: user, token: 'local-token' });
+                        const fresh = users.find((u) => Number(u.id) === Number(user.id)) || user;
+                        localStorage.setItem('crs_current_user', JSON.stringify(fresh));
+                        resolve({ success: true, user: fresh, token: 'local-token' });
                     } else {
                         resolve({ success: false, message: 'Invalid username or password' });
                     }
@@ -316,14 +357,13 @@ async function apiRequest(url, method = 'GET', data = null) {
                     localStorage.setItem('crs_users', JSON.stringify(users));
                     resolve({ success: true, message: 'User created' });
                 } else if (action === 'update') {
-                    users = users.map(u => u.id == data.id ? { ...u, ...data } : u);
-                    localStorage.setItem('crs_users', JSON.stringify(users));
-                    if (currentUser.id == data.id) {
-                        const updated = users.find(u => u.id == data.id);
-                        localStorage.setItem('crs_current_user', JSON.stringify(updated));
-                        window.currentUser = updated;
-                    }
-                    resolve({ success: true, message: 'User updated', profile_pic: data.profile_pic });
+                    const updated = persistUserProfile(data.id, data);
+                    resolve({
+                        success: true,
+                        message: 'User updated',
+                        profile_pic: updated?.profile_pic ?? data.profile_pic,
+                        user: updated
+                    });
                 } else if (action === 'delete') {
                     users = users.filter(u => u.id != id);
                     localStorage.setItem('crs_users', JSON.stringify(users));
@@ -403,7 +443,6 @@ function renderSidebarNav(activePage) {
         { id: 'birth-records', href: 'birth-records.html', icon: 'fa-file-alt', label: 'Birth Reports' },
         { id: 'death-records', href: 'death-records.html', icon: 'fa-file-medical', label: 'Death Reports' },
         { id: 'reports', href: 'reports.html', icon: 'fa-chart-pie', label: 'Reports' },
-        { id: 'profile', href: 'profile.html', icon: 'fa-user-circle', label: 'Profile & Settings' },
         { id: 'install', href: 'install.html', icon: 'fa-download', label: 'Install App' },
         { id: 'users', href: 'users.html', icon: 'fa-users', label: 'Users', adminOnly: true }
     ];
@@ -431,19 +470,107 @@ function renderSidebarNav(activePage) {
         });
     }
 
-    setupHeaderProfileLink();
+    ensureHeaderProfileAccess(window.currentUser);
 }
 
-function setupHeaderProfileLink() {
-    document.querySelectorAll('#userAvatar').forEach(img => {
-        if (img.closest('a')) return;
+/** Profile & Settings — header on every page (not only sidebar) */
+function ensureHeaderProfileAccess(user) {
+    if (!user) return;
+
+    document.querySelectorAll('header button').forEach((btn) => {
+        if (!btn.querySelector('#userAvatar')) return;
+        const link = document.createElement('a');
+        link.href = 'profile.html';
+        link.className = 'flex items-center space-x-3 shrink-0 header-profile-link';
+        link.title = 'Profile & Settings';
+        link.innerHTML = btn.innerHTML;
+        btn.replaceWith(link);
+    });
+
+    document.querySelectorAll('#userAvatar').forEach((img) => {
+        if (img.closest('a[href="profile.html"]')) return;
         const wrap = document.createElement('a');
         wrap.href = 'profile.html';
-        wrap.className = 'block shrink-0';
+        wrap.className = 'flex items-center shrink-0 header-profile-link';
         wrap.title = 'Profile & Settings';
         img.parentNode.insertBefore(wrap, img);
         wrap.appendChild(img);
     });
+
+    document.querySelectorAll('header').forEach((header) => {
+        const row =
+            header.querySelector('.flex.items-center.justify-between') ||
+            header.querySelector('.flex');
+        if (!row) return;
+
+        if (!row.querySelector('[data-profile-settings]') && !header.querySelector('a[href="profile.html"]')) {
+            const settingsLink = document.createElement('a');
+            settingsLink.href = 'profile.html';
+            settingsLink.setAttribute('data-profile-settings', '1');
+            settingsLink.className =
+                'header-profile-settings hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800 shrink-0';
+            settingsLink.title = 'Profile & Settings';
+            settingsLink.innerHTML =
+                '<i class="fas fa-user-cog"></i><span>Profile</span>';
+            const slot = row.querySelector('.header-profile-slot') || row.lastElementChild;
+            if (slot && slot.classList.contains('header-profile-slot')) {
+                slot.insertBefore(settingsLink, slot.firstChild);
+            } else {
+                row.appendChild(settingsLink);
+            }
+        }
+
+        if (!header.querySelector('#userAvatar')) {
+            let slot = row.querySelector('.header-profile-slot');
+            if (!slot) {
+                slot = document.createElement('div');
+                slot.className =
+                    'header-profile-slot flex items-center gap-2 sm:gap-3 ml-auto shrink-0';
+                row.appendChild(slot);
+            }
+            if (!slot.querySelector('#userAvatar')) {
+                const block = document.createElement('a');
+                block.href = 'profile.html';
+                block.className = 'flex items-center gap-2 header-profile-link';
+                block.title = 'Profile & Settings';
+                block.innerHTML = `<img id="userAvatar" alt="" class="w-10 h-10 rounded-full border-2 border-indigo-100 shadow object-cover bg-gray-100">
+                    <span class="hidden md:block text-left">
+                        <span id="userName" class="block text-sm font-semibold text-gray-800 truncate"></span>
+                        <span id="userRole" class="block text-xs text-gray-500 capitalize"></span>
+                    </span>`;
+                slot.appendChild(block);
+                const nameEl = block.querySelector('#userName');
+                const roleEl = block.querySelector('#userRole');
+                if (nameEl) nameEl.textContent = user.full_name;
+                if (roleEl) roleEl.textContent = user.role;
+            }
+        }
+    });
+
+    applyAvatarToPage(user.profile_pic, user.full_name);
+    ensureProfileFab(user);
+}
+
+function ensureProfileFab(user) {
+    if (document.body.dataset.page === 'profile') return;
+    let fab = document.getElementById('profileFab');
+    if (!fab) {
+        fab = document.createElement('a');
+        fab.id = 'profileFab';
+        fab.href = 'profile.html';
+        fab.className = 'profile-fab';
+        fab.title = 'Profile & Settings';
+        fab.innerHTML = '<i class="fas fa-user-cog"></i>';
+        document.body.appendChild(fab);
+    }
+    if (user.profile_pic) {
+        fab.style.backgroundImage = `url(${user.profile_pic})`;
+        fab.style.backgroundSize = 'cover';
+        fab.classList.add('profile-fab-has-photo');
+    } else {
+        fab.style.backgroundImage = '';
+        fab.classList.remove('profile-fab-has-photo');
+    }
 }
 
 let closeMobileSidebarGlobal = () => {};
@@ -577,6 +704,9 @@ window.hideLoading = hideLoading;
 window.confirmAction = confirmAction;
 window.applyResponsiveTableLabels = applyResponsiveTableLabels;
 window.uploadProfileImageToCloudinary = uploadProfileImageToCloudinary;
+window.persistUserProfile = persistUserProfile;
+window.syncCurrentUserFromDb = syncCurrentUserFromDb;
+window.ensureHeaderProfileAccess = ensureHeaderProfileAccess;
 window.applyAvatarToPage = applyAvatarToPage;
 window.renderSidebarNav = renderSidebarNav;
 window.openBirthCertificate = openBirthCertificate;
